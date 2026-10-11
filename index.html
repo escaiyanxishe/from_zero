@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>从一个点，到一个宇宙：零基础做网页动画</title>
+<style>
+  :root { --bg:#0b0b14; --panel:#151524; --ink:#e8e6f3; --soft:#9a96b4; --a1:#ffc65c; --a2:#ff5e8a; --a3:#8a7dff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:18px/1.85 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+  main { max-width:1180px; margin:auto; padding:56px 24px 120px; }
+  h1 { font-size:56px; line-height:1.2; margin:0 0 8px; font-weight:800;
+       background:linear-gradient(90deg,var(--a1),var(--a2),var(--a3));
+       -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { color:var(--soft); font-size:21px; margin:0 0 26px; }
+  .cap { color:var(--soft); font-size:16px; text-align:center; margin:12px 0 0; }
+  .stairs { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; margin:46px 0 14px; }
+  .stairs span { color:#111; font-weight:700; border-radius:10px; padding:10px 14px;
+                 padding-top:calc(10px + var(--i) * 16px);
+                 background:linear-gradient(180deg,var(--a1),var(--a2)); opacity:calc(.5 + var(--i)*.085); }
+  .chain { font-size:20px; background:var(--panel); border-left:5px solid var(--a2);
+           padding:18px 22px; border-radius:10px; margin:22px 0; }
+  section { margin-top:90px; }
+  h2 { font-size:34px; margin:0 0 6px; display:flex; align-items:center; gap:14px; }
+  h2 b { background:linear-gradient(135deg,var(--a1),var(--a2)); color:#111; border-radius:50%;
+         width:50px; height:50px; display:inline-grid; place-items:center; font-size:24px; flex:none; }
+  h3 { font-size:23px; margin:46px 0 4px; color:var(--a1); }
+  p { margin:6px 0 16px; }
+  code { background:#24243a; padding:1px 6px; border-radius:5px; font-size:.9em; }
+  .demo { display:grid; grid-template-columns:1fr 1.1fr; gap:22px; align-items:start; margin-top:14px; }
+  @media (max-width:900px){ .demo { grid-template-columns:1fr; } h1 { font-size:38px; } }
+  .bar { display:flex; justify-content:space-between; align-items:center; background:#23233a;
+         color:#aaa6c6; font-size:14px; padding:8px 12px; border-radius:10px 10px 0 0; }
+  textarea, pre.code { width:100%; margin:0; background:#11111c; color:#e8e6f0; border:0;
+         border-radius:0 0 10px 10px; padding:14px 16px; font:14px/1.65 Consolas,Menlo,monospace;
+         tab-size:2; resize:vertical; outline:none; white-space:pre; overflow:auto; }
+  pre.code { border-radius:10px; }
+  .view { position:sticky; top:16px; }
+  canvas { display:block; width:100%; height:auto; background:#05050f; border-radius:12px;
+           box-shadow:0 10px 40px rgba(0,0,0,.5), 0 0 0 1px #22223a; }
+  canvas:fullscreen { object-fit:contain; background:#000; border-radius:0; }
+  .tools { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  button { font:inherit; font-size:15px; border:0; border-radius:8px; padding:7px 14px; cursor:pointer;
+           background:#23233a; color:var(--ink); }
+  button:hover { background:#2e2e4a; }
+  button.run { background:var(--a2); color:#fff; padding:4px 12px; }
+  button.rec { background:#e63946; color:#fff; font-weight:700; }
+  button:disabled { opacity:.6; cursor:wait; }
+  .err { color:#ff6b6b; font-size:15px; margin-top:8px; }
+  .tip { background:var(--panel); border-radius:10px; padding:16px 20px; font-size:16px; color:#c9c6dd; }
+  ol.steps { padding-left:1.3em; } ol.steps li { margin:4px 0; }
+  .tl { background:var(--panel); border-radius:12px; padding:16px 20px; margin:16px 0; font-size:15px; }
+  .tl div { position:relative; padding-left:calc(var(--a) / 26 * 100%); white-space:nowrap; line-height:2.1; }
+  .tl div::before { content:''; position:absolute; top:5px; bottom:5px; border-radius:6px; z-index:0;
+                    left:calc(var(--a) / 26 * 100%); width:calc((var(--b) - var(--a)) / 26 * 100%);
+                    background:linear-gradient(90deg,var(--a2),var(--a3)); opacity:.45; }
+  .tl div span { position:relative; z-index:1; padding-left:8px; }
+  .tl .axis { display:flex; justify-content:space-between; color:var(--soft); font-size:13px; padding:0; }
+  .tl .axis::before { display:none; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>从一个点，到一个宇宙</h1>
+<p class="sub">零基础做网页动画：只用圆、线、矩形，一步一步做出一段短片。</p>
+
+<div class="demo-hero" data-demo="hero"></div>
+<p class="cap">↑ 这段 26 秒的动画是教程最后一步的成品。往下看，它是怎么从一个点一步步长出来的。</p>
+
+<div class="stairs">
+  <span style="--i:0">文本文件</span><span style="--i:1">网页</span><span style="--i:2">一个形状</span>
+  <span style="--i:3">很多形状</span><span style="--i:4">复杂图案</span><span style="--i:5">动画</span><span style="--i:6">短片</span>
+</div>
+<div class="chain">
+  你会建文本文件，你就会做网页；<br>
+  你会做网页，你就会画一个圆；<br>
+  你会画一个圆，你就能画一千个；<br>
+  一千个圆和线按规律摆好，就是惊艳的图案；<br>
+  让图案跟着时间变化，就是动画；把动画按时间排好、录下来，就是一部短片。
+</div>
+
+<!-- ============ 0 ============ -->
+<section>
+  <h2><b>0</b>文本文件 → 网页</h2>
+  <p>网页就是一个文本文件，只是文件名以 <code>.html</code> 结尾。</p>
+  <ol class="steps">
+    <li>新建一个文本文件（Windows 用记事本，Mac 用 TextEdit 并切换成“纯文本”）。</li>
+    <li>把下面的内容粘贴进去，保存。</li>
+    <li>把文件名改成 <code>index.html</code>（注意不能变成 index.html.txt）。</li>
+    <li>双击打开，你就有了一个网页，上面是一块黑色的画布。</li>
+  </ol>
+<pre class="code">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;/head&gt;
+&lt;body style="margin:0; background:black"&gt;
+  &lt;canvas id="c" width="1280" height="720"&gt;&lt;/canvas&gt;  &lt;!-- 1280×720，正好是高清视频的尺寸 --&gt;
+  &lt;script&gt;
+    const canvas = document.getElementById('c');   // 画布
+    const ctx = canvas.getContext('2d');           // 画笔
+    const W = canvas.width, H = canvas.height;     // 宽 1280，高 720
+    // ↓↓↓ 后面每个例子的代码，都写在这里 ↓↓↓
+
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+  <p>这个骨架记住一句话就够了：<b>canvas 是画布，ctx 是画笔</b>。后面每个例子，都只是往“写在这里”的位置填代码。</p>
+</section>
+
+<!-- ============ 1 ============ -->
+<section>
+  <h2><b>1</b>画一个形状</h2>
+  <p>整部短片只用到三种形状：<b>矩形、圆、线</b>。位置用坐标表示：左上角是 (0, 0)，往右 x 变大，<b>往下 y 变大</b>，画布正中心是 (640, 360)。</p>
+  <p>左边的代码可以直接改，比如换一个颜色、改一下数字，然后按「▶ 运行」或 Ctrl+Enter。</p>
+  <div class="demo" data-demo="s1"></div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section>
+  <h2><b>2</b>一个变很多，很多变惊艳</h2>
+
+  <h3>2.1 把形状做成积木，顺便学会“光”</h3>
+  <p>每画一个圆都要写四行，太麻烦。把这四行装进<b>函数</b>，以后一行就能画一个圆。函数就是积木。</p>
+  <p>再学一个让画面发光的设置：<code>'lighter'</code>。打开它以后，颜色叠在一起会相加，就像几盏灯照在同一面墙上：红加绿变黄，三种颜色全部叠起来变成白色。后面所有发光的效果，都来自这一行。</p>
+  <div class="demo" data-demo="s2a"></div>
+
+  <h3>2.2 用循环，一次画 576 个</h3>
+  <p><code>for</code> 循环可以把一行代码重复很多次。每个圆的颜色和大小都跟着它的位置变化，576 个圆就排出了一片彩色的波浪。这里的颜色用 <code>hsl(色相, 饱和度, 亮度)</code> 表示，色相从 0 到 360 就是彩虹的一圈。</p>
+  <div class="demo" data-demo="s2b"></div>
+
+  <h3>2.3 排成一圈，再连起来</h3>
+  <p>先用 <code>cos</code> 和 <code>sin</code> 在圆周上均匀地放 300 个点，然后按一条很简单的规则连线：<b>第 i 个点连到第 i × k 个点</b>。k = 2 的时候，300 条直线自己拼出了一个心形。试试把 k 改成 3、4、7、21、51，每个数字都会得到一个完全不同的图案。</p>
+  <div class="demo" data-demo="s2c"></div>
+
+  <h3>2.4 四千个点，叠出一个星系</h3>
+  <p>同样的办法，换一个摆法：4000 个小方块排在 3 条螺旋上，离中心越远，绕得越多，颜色从金黄慢慢变成紫蓝。再加一块新积木 <code>glow</code>：把 12 个半透明的圆叠在一起，就成了一团光晕。整个星系没有用到任何新形状。</p>
+  <div class="demo" data-demo="s2d"></div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section>
+  <h2><b>3</b>让它动起来</h2>
+
+  <h3>3.1 动画的原理</h3>
+  <p>动画就是<b>一秒钟重画 60 次，每次都稍微变一点</b>。每一帧都做同样的四件事：<b>擦掉 → 画 → 时间往前走一点 → 预约下一帧</b>。</p>
+  <div class="demo" data-demo="s3a"></div>
+
+  <h3>3.2 一个小技巧：光轨</h3>
+  <p>擦画布的时候不要完全擦干净，只盖上一层半透明的“薄纱”。这样上一帧的画面会慢慢变淡，运动的东西就会拖出一道光轨。我们只改了一行代码，下面 60 个光点就画出了这样的效果。</p>
+  <div class="demo" data-demo="s3b"></div>
+
+  <h3>3.3 让图案自己变形</h3>
+  <p>还记得 2.3 里的 k 吗？现在不再手动改它，而是让它跟着时间慢慢变大。图案会不停地从一种变成另一种，左上角能看到 k 当前的值。</p>
+  <div class="demo" data-demo="s3c"></div>
+
+  <h3>3.4 让星系转起来</h3>
+  <p>先把 4000 颗星星各自的位置记在一个列表里，然后每一帧让它们各转一点。越靠近中心转得越快，真实的星系也是这样。再配上 3.2 的光轨。</p>
+  <div class="demo" data-demo="s3d"></div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section>
+  <h2><b>4</b>排成一部短片，再录成视频</h2>
+  <p>到这一步已经没有新的形状了。我们手里有几位“演员”：星空、飞出来的点、会变形的图案、旋转的星系、字幕。剩下要做的，是给它们排一张<b>时间表（分镜）</b>，规定每个演员第几秒出场、第几秒退场：</p>
+
+  <div class="tl">
+    <div style="--a:0;--b:4.2"><span>星空亮起 +「从一个点开始」</span></div>
+    <div style="--a:3.5;--b:8"><span>一个点 → 360 个点飞出</span></div>
+    <div style="--a:8;--b:11"><span>连线出现（心形）</span></div>
+    <div style="--a:11;--b:20"><span>图案不断变形</span></div>
+    <div style="--a:16;--b:24"><span>星系展开</span></div>
+    <div style="--a:21;--b:24.5"><span>结尾字幕</span></div>
+    <div style="--a:24.5;--b:26"><span>淡出</span></div>
+    <div class="axis"><span>0 秒</span><span>13 秒</span><span>26 秒</span></div>
+  </div>
+
+  <p>让这张表真正起作用的，只有一个小工具 <code>ramp(s, a, b)</code>：在第 a 秒到第 b 秒之间，它的值从 0 平滑地变到 1。把它乘到透明度、大小或位置上，就能控制东西什么时候出现、什么时候消失。文字也是一种形状，用 <code>fillText</code> 来画。</p>
+  <p>想录成视频，点红色按钮就行。短片会从第 0 秒重新播放，把完整的 26 秒录下来，结束后自动下载。录制的时候不要切换到别的页面，也不要把画面滚出屏幕。</p>
+  <div class="demo" data-demo="s4"></div>
+
+  <h3>4.1 关于视频文件</h3>
+  <div class="tip">
+    视频的分辨率是 1280×720。新版 Chrome、Edge 和 Safari 会直接存成 <code>.mp4</code>，Firefox 会存成 <code>.webm</code>。如果需要把 webm 转成 mp4，装好 ffmpeg 后运行：<code>ffmpeg -i my-film.webm my-film.mp4</code><br><br>
+    想把<b>整个教程网页</b>录成讲解视频，用录屏就可以：Windows 按 <code>Win + Alt + R</code>，Mac 按 <code>Cmd + Shift + 5</code>，也可以用免费软件 OBS。每个画布下面都有「⛶ 全屏」按钮，可以单独把动画放到全屏播放。
+  </div>
+</section>
+
+<section>
+  <h2><b>✓</b>回头看一眼</h2>
+  <p>你一共只学了三种形状：<b>矩形、圆、线</b>。<br>
+  把它们装进函数，就是积木；用循环摆一千个，再按规律排好，就是图案；
+  让图案跟着时间 <code>t</code> 变化，就是动画；给几段动画排一张时间表，就是短片；把画布录下来，就是视频。<br>
+  <b>每一步都只是把上一步重复很多次。</b></p>
+</section>
+
+</main>
+
+<script>
+/* ===================== 示例代码 ===================== */
+
+const S1 = `// 画布：宽 W = 1280，高 H = 720，正中心是 (640, 360)
+
+// ① 矩形：fillRect(x, y, 宽, 高)
+//    先用一个铺满画布的大矩形当背景
+ctx.fillStyle = '#0b0b1a';
+ctx.fillRect(0, 0, W, H);
+
+ctx.fillStyle = '#ff6b6b';
+ctx.fillRect(160, 260, 200, 200);
+
+// ② 圆：arc(圆心x, 圆心y, 半径, 起始角, 结束角)
+ctx.fillStyle = '#ffd93d';
+ctx.beginPath();
+ctx.arc(640, 360, 110, 0, Math.PI * 2);
+ctx.fill();
+
+// ③ 线：从 moveTo 的点，连到 lineTo 的点
+ctx.strokeStyle = '#4dd2ff';
+ctx.lineWidth = 12;
+ctx.beginPath();
+ctx.moveTo(920, 260);
+ctx.lineTo(1120, 460);
+ctx.stroke();`;
+
+const LIB = `// 三块积木：每个函数负责画一种形状
+function rect(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
+}
+function circle(x, y, r, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+function line(x1, y1, x2, y2, color, width) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+}
+`;
+
+const S2A = LIB + `
+// 现在一行就能画一个形状
+rect(0, 0, W, H, 'black');
+
+ctx.globalCompositeOperation = 'lighter';  // 颜色相加，像光一样
+circle(560, 300, 180, 'rgb(255, 0, 0)');   // 红灯
+circle(720, 300, 180, 'rgb(0, 255, 0)');   // 绿灯
+circle(640, 440, 180, 'rgb(0, 0, 255)');   // 蓝灯
+// 看叠在一起的地方：红+绿=黄，三种颜色加起来=白`;
+
+const S2B = `// rect / circle / line 三块积木已自动带上
+
+rect(0, 0, W, H, '#0b0b1a');
+
+for (let i = 0; i < 32; i++) {          // 32 列
+  for (let j = 0; j < 18; j++) {        // 18 行
+    const x = 20 + i * 40;
+    const y = 20 + j * 40;
+    const r = 8 + 8 * Math.sin(i * 0.4 + j * 0.3);   // 大小像波浪一样起伏
+    const hue = 180 + i * 5 + j * 5;                  // 颜色跟着位置变
+    circle(x, y, r, 'hsl(' + hue + ', 80%, 60%)');
+  }
+}
+// 32 × 18 = 576 个圆，代码只有几行`;
+
+const S2C = `// 积木已自动带上
+rect(0, 0, W, H, '#05050f');
+ctx.globalCompositeOperation = 'lighter';
+
+const N = 300;    // 圆上放 300 个点
+const k = 2;      // 试试改成 3、4、7、21、51
+
+// 圆上第 i 个点在哪里：圆心 (640,360)，半径 300
+function point(i) {
+  const a = i / N * Math.PI * 2;
+  return [640 + 300 * Math.cos(a), 360 + 300 * Math.sin(a)];
+}
+
+for (let i = 0; i < N; i++) {
+  const [x1, y1] = point(i);
+  const [x2, y2] = point(i * k);       // 规则：第 i 个点连到第 i×k 个点
+  line(x1, y1, x2, y2, 'hsla(' + (i / N * 360) + ', 90%, 60%, 0.6)', 1.5);
+  circle(x1, y1, 2.5, 'white');
+}`;
+
+const GLOW = `// 新积木：光晕 = 12 个半透明的圆叠在一起
+function glow(x, y, r, hue) {
+  if (r <= 0) return;
+  for (let i = 1; i <= 12; i++) {
+    circle(x, y, r * i / 12, 'hsla(' + hue + ', 100%, 70%, 0.06)');
+  }
+}
+`;
+
+const S2D = `// rect / circle / line 已自动带上
+
+` + GLOW + `
+rect(0, 0, W, H, '#05050f');
+ctx.globalCompositeOperation = 'lighter';
+
+// ① 背景：300 颗星星，每颗是一个 2×2 的小矩形
+for (let i = 0; i < 300; i++) {
+  rect(Math.random() * W, Math.random() * H, 2, 2,
+       'rgba(255,255,255,' + Math.random() + ')');
+}
+
+// ② 星系：4000 个小点，分布在 3 条旋臂上
+for (let i = 0; i < 4000; i++) {
+  const r = Math.pow(Math.random(), 1.5) * 360;   // 离中心多远（越靠中心越密）
+  const a = (i % 3) * Math.PI * 2 / 3             // 属于哪一条旋臂
+          + r * 0.012                             // 越远绕得越多，就弯成了螺旋
+          + (Math.random() - 0.5) * 0.7;          // 加一点随机，看起来更自然
+  const x = 640 + Math.cos(a) * r;
+  const y = 360 + Math.sin(a) * r * 0.55;         // 把 y 压扁，像是斜着看过去
+  const size = 1 + Math.random() * 1.5;
+  rect(x, y, size, size, 'hsla(' + (40 - r * 0.45) + ', 90%, 65%, 0.8)');
+}
+
+// ③ 中心的光
+glow(640, 360, 90, 40);`;
+
+const S3A = `// 积木已自动带上
+let t = 0;   // 时间：每一帧加 1
+
+function frame() {
+  rect(0, 0, W, H, '#05050f');                  // 1. 擦掉（用背景色盖住）
+  const a = t * 0.03;
+  circle(640 + 250 * Math.cos(a),
+         360 + 250 * Math.sin(a), 20, '#ffd93d'); // 2. 画：位置跟 t 有关
+  t++;                                          // 3. 时间往前走一点
+  requestAnimationFrame(frame);                 // 4. 请浏览器下一帧再调用我
+}
+frame();`;
+
+const S3B = `// 积木已自动带上
+let t = 0;
+
+function frame() {
+  ctx.globalCompositeOperation = 'source-over';
+  rect(0, 0, W, H, 'rgba(5, 5, 15, 0.08)');   // 关键：只盖一层“薄纱”，留下残影
+  ctx.globalCompositeOperation = 'lighter';
+
+  for (let i = 0; i < 60; i++) {               // 60 个光点，各自绕着圆心转
+    const r = 30 + i * 5;                      // 第 i 个光点的轨道半径
+    const a = t * 3 / r + i * 0.4;             // 越靠里转得越快
+    circle(640 + Math.cos(a) * r, 360 + Math.sin(a) * r, 4,
+           'hsl(' + (i * 6) + ', 90%, 60%)');
+  }
+  t++;
+  requestAnimationFrame(frame);
+}
+frame();
+// 试试把 0.08 改成 1（每帧完全擦掉）或者 0.02（光轨更长）`;
+
+const S3C = `// 积木已自动带上
+const N = 300;
+function point(i) {
+  const a = i / N * Math.PI * 2;
+  return [640 + 300 * Math.cos(a), 360 + 300 * Math.sin(a)];
+}
+
+let t = 0;
+function frame() {
+  ctx.globalCompositeOperation = 'source-over';
+  rect(0, 0, W, H, 'rgba(5, 5, 15, 0.3)');
+  ctx.globalCompositeOperation = 'lighter';
+
+  const k = 2 + t * 0.003;          // 和 2.3 唯一的区别：k 跟着时间变大
+  for (let i = 0; i < N; i++) {
+    const [x1, y1] = point(i);
+    const [x2, y2] = point(i * k);
+    line(x1, y1, x2, y2, 'hsla(' + (i / N * 360 + t) + ', 90%, 60%, 0.5)', 1.5);
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'white';
+  ctx.font = '28px monospace';
+  ctx.fillText('k = ' + k.toFixed(2), 40, 60);   // 文字也能画
+
+  t++;
+  requestAnimationFrame(frame);
+}
+frame();`;
+
+const S3D = `// 积木（含 glow）已自动带上
+
+// 先把每颗星星的信息记进列表里（和 2.4 的算法一样）
+const stars = [];
+for (let i = 0; i < 4000; i++) {
+  const r = Math.pow(Math.random(), 1.5) * 360;
+  stars.push({
+    r: r,
+    a: (i % 3) * Math.PI * 2 / 3 + r * 0.012 + (Math.random() - 0.5) * 0.7,
+    size: 1 + Math.random() * 1.5,
+    color: 'hsla(' + (40 - r * 0.45) + ', 90%, 65%, 0.8)'
+  });
+}
+
+let t = 0;
+function frame() {
+  ctx.globalCompositeOperation = 'source-over';
+  rect(0, 0, W, H, 'rgba(5, 5, 15, 0.3)');          // 带一点光轨
+  ctx.globalCompositeOperation = 'lighter';
+
+  for (const st of stars) {
+    const a = st.a + t * (0.002 + 0.15 / (st.r + 60)); // 越靠里转得越快
+    rect(640 + Math.cos(a) * st.r,
+         360 + Math.sin(a) * st.r * 0.55, st.size, st.size, st.color);
+  }
+  glow(640, 360, 90, 40);
+
+  t++;
+  requestAnimationFrame(frame);
+}
+frame();`;
+
+const S4 = `// 积木（rect circle line glow）已自动带上
+// ================= 成片：从一个点，到一个宇宙 =================
+const DURATION = 26;   // 全片 26 秒
+const N = 360;         // 圆上的点数
+
+// 时间工具：在第 a 秒到第 b 秒之间，从 0 平滑地变到 1
+function ramp(s, a, b) {
+  const x = Math.min(1, Math.max(0, (s - a) / (b - a)));
+  return x * x * (3 - 2 * x);
+}
+
+// ---------- 演员 1：星空（来自 2.4）----------
+const sky = [];
+for (let i = 0; i < 400; i++) {
+  sky.push({ x: Math.random() * W, y: Math.random() * H,
+             phase: Math.random() * 6.28, born: Math.random() * 3 });
+}
+function drawSky(s) {
+  for (const p of sky) {
+    const a = ramp(s, p.born, p.born + 1) * (0.5 + 0.5 * Math.sin(s * 3 + p.phase));
+    rect(p.x, p.y, 2, 2, 'rgba(255,255,255,' + a + ')');
+  }
+}
+
+// ---------- 演员 2：会变形的图案（来自 2.3 和 3.3）----------
+function drawMandala(s) {
+  const fadeOut = 1 - ramp(s, 19, 22);               // 19~22 秒淡出
+  if (fadeOut <= 0) return;
+  const rot = s * 0.15;                               // 整体慢慢旋转
+  const k = 2 + 5 * ramp(s, 11, 20);                  // 11~20 秒：k 从 2 变到 7
+  const lineA = ramp(s, 8, 11) * fadeOut;             // 8~11 秒：连线出现
+  const pos = i => {
+    const a = i / N * Math.PI * 2 + rot;
+    return [640 + 270 * Math.cos(a), 360 + 270 * Math.sin(a)];
+  };
+  for (let i = 0; i < N; i++) {
+    const [x1, y1] = pos(i);
+    const hue = i / N * 360 + s * 40;
+    if (lineA > 0) {
+      const [x2, y2] = pos(i * k);
+      line(x1, y1, x2, y2, 'hsla(' + hue + ', 90%, 60%, ' + 0.5 * lineA + ')', 1.5);
+    }
+    const fly = ramp(s, 4 + i / N * 3, 5 + i / N * 3);   // 4~8 秒：点从中心依次飞出
+    if (fly > 0) {
+      circle(640 + (x1 - 640) * fly, 360 + (y1 - 360) * fly, 2.5,
+             'hsla(' + hue + ', 100%, 80%, ' + fadeOut + ')');
+    }
+  }
+}
+
+// ---------- 演员 3：旋转的星系（来自 3.4）----------
+const stars = [];
+for (let i = 0; i < 5000; i++) {
+  const r = Math.pow(Math.random(), 1.5) * 560;
+  stars.push({
+    r: r,
+    a: (i % 3) * Math.PI * 2 / 3 + r * 0.008 + (Math.random() - 0.5) * 0.7,
+    size: 1 + Math.random() * 1.8,
+    color: 'hsla(' + (40 - r * 0.3) + ', 90%, 65%, 0.8)'
+  });
+}
+function drawGalaxy(s) {
+  const power = ramp(s, 16, 21);                      // 16~21 秒慢慢亮起
+  if (power <= 0) return;
+  const zoom = 0.3 + 0.9 * ramp(s, 16, 24);           // 同时从小慢慢展开
+  const time = s - 16;
+  ctx.globalAlpha = power;
+  for (const st of stars) {
+    const a = st.a + time * (0.12 + 9 / (st.r + 60));
+    const r = st.r * zoom;
+    rect(640 + Math.cos(a) * r, 360 + Math.sin(a) * r * 0.55, st.size, st.size, st.color);
+  }
+  glow(640, 360, 130 * zoom, 40);
+  ctx.globalAlpha = 1;
+}
+
+// ---------- 演员 4：字幕 ----------
+function title(text, size, y, alpha) {
+  if (alpha <= 0) return;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.font = '300 ' + size + 'px "PingFang SC", "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+  ctx.fillText(text, 640, y);
+}
+
+// ================= 导演：每一帧按时间表让演员上场 =================
+let start = performance.now();
+function frame() {
+  let s = (performance.now() - start) / 1000;         // 用真实时间，单位是秒
+  if (s > DURATION + 1) { start = performance.now(); s = 0; }   // 播完从头再来
+
+  ctx.globalCompositeOperation = 'source-over';
+  rect(0, 0, W, H, 'rgba(3, 3, 10, 0.3)');            // 3.2 的光轨
+  ctx.globalCompositeOperation = 'lighter';
+
+  drawSky(s);
+  drawGalaxy(s);
+  drawMandala(s);
+  glow(640, 360, 50 * ramp(s, 3.5, 4.5) * (1 - ramp(s, 6, 8)), 50);  // 那“一个点”
+
+  title('从一个点开始', 60, 380, ramp(s, 0.8, 2) * (1 - ramp(s, 3.2, 4.2)));
+  title('一个点 · 一个圆 · 一个宇宙', 52, 615, ramp(s, 21, 22.5));
+  title('全部只用 圆、线、矩形 画成', 24, 665, ramp(s, 22.5, 23.5) * 0.7);
+
+  ctx.globalCompositeOperation = 'source-over';
+  rect(0, 0, W, H, 'rgba(0, 0, 0, ' + ramp(s, 24.5, 26) + ')');      // 结尾淡出
+  requestAnimationFrame(frame);
+}
+frame();
+
+// ================= 录成视频（第 4 步新内容）=================
+function record() {
+  const types = ['video/mp4;codecs=avc1', 'video/webm;codecs=vp9', 'video/webm'];
+  const type = types.find(x => MediaRecorder.isTypeSupported(x));
+  const stream = canvas.captureStream(60);                    // 1. 画布 → 视频流
+  const recorder = new MediaRecorder(stream,                  // 2. 一台录像机
+                     { mimeType: type, videoBitsPerSecond: 20000000 });
+  const chunks = [];
+  recorder.ondataavailable = e => chunks.push(e.data);        // 3. 收集录到的片段
+  recorder.onstop = () => {                                   // 4. 录完：拼成文件并下载
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(chunks, { type: type }));
+    a.download = 'my-film.' + (type.startsWith('video/mp4') ? 'mp4' : 'webm');
+    a.click();
+    button.disabled = false;
+    button.textContent = '● 录制完整短片';
+  };
+  start = performance.now();                                  // 从第 0 秒重新播放
+  ctx.globalCompositeOperation = 'source-over';
+  rect(0, 0, W, H, 'black');
+  recorder.start();
+  button.disabled = true;
+  button.textContent = '录制中…（共 ' + DURATION + ' 秒）';
+  setTimeout(() => recorder.stop(), DURATION * 1000 + 500);
+}
+if (button) button.onclick = record;`;
+
+const P1 = LIB, P2 = LIB + GLOW;
+const DEMOS = {
+  hero: { pre: P2, code: S4, hero: true },
+  s1:   { pre: '', code: S1 },
+  s2a:  { pre: '', code: S2A },
+  s2b:  { pre: P1, code: S2B },
+  s2c:  { pre: P1, code: S2C },
+  s2d:  { pre: P1, code: S2D },
+  s3a:  { pre: P2, code: S3A },
+  s3b:  { pre: P2, code: S3B },
+  s3c:  { pre: P2, code: S3C },
+  s3d:  { pre: P2, code: S3D },
+  s4:   { pre: P2, code: S4, rec: true },
+};
+
+/* ============ 下面是让教程“能跑起来”的小机关，不用看 ============ */
+
+const io = new IntersectionObserver(es => es.forEach(e => { e.target._vis = e.isIntersecting; }));
+
+document.querySelectorAll('[data-demo]').forEach(el => {
+  const d = DEMOS[el.dataset.demo];
+  const view = `
+    <div class="view">
+      <canvas width="1280" height="720"></canvas>
+      <div class="tools">
+        ${d.rec ? '<button class="rec">● 录制完整短片</button>' : ''}
+        <button class="fs">⛶ 全屏</button>
+        ${d.hero ? '' : '<button class="dl">⬇ 下载成独立网页</button>'}
+      </div>
+      <div class="err"></div>
+    </div>`;
+  el.innerHTML = d.hero ? view : `
+    <div>
+      <div class="bar"><span>代码（可以直接改，Ctrl+Enter 运行）</span><button class="run">▶ 运行</button></div>
+      <textarea spellcheck="false"></textarea>
+    </div>` + view;
+  d.canvas = el.querySelector('canvas');
+  d.button = el.querySelector('.rec');
+  d.err = el.querySelector('.err');
+  d.token = 0;
+  io.observe(d.canvas);
+  el.querySelector('.fs').onclick = () => d.canvas.requestFullscreen && d.canvas.requestFullscreen();
+  if (!d.hero) {
+    const ta = el.querySelector('textarea');
+    ta.value = d.code;
+    ta.rows = d.code.split('\n').length + 1;
+    d.ta = ta;
+    el.querySelector('.run').onclick = () => run(d);
+    el.querySelector('.dl').onclick = () => download(d);
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(d); }
+      if (e.key === 'Tab') { e.preventDefault(); ta.setRangeText('  ', ta.selectionStart, ta.selectionEnd, 'end'); }
+    });
+  }
+  run(d);
+});
+
+function codeOf(d) { return d.ta ? d.ta.value : d.code; }
+
+function run(d) {
+  const my = ++d.token;                         // 重新运行时，让旧动画停下
+  const canvas = d.canvas;
+  canvas.width = canvas.width;                  // 清空画布，重置画笔
+  const ctx = canvas.getContext('2d');
+  d.err.textContent = '';
+  const raf = fn => {
+    if (d.token !== my) return;
+    requestAnimationFrame(function wait(ts) {
+      if (d.token !== my) return;
+      if (canvas._vis === false) { requestAnimationFrame(wait); return; }  // 看不见时暂停绘制
+      try { fn(ts); } catch (e) { d.err.textContent = '出错了：' + e.message; }
+    });
+  };
+  try {
+    new Function('canvas', 'ctx', 'W', 'H', 'requestAnimationFrame', 'button', d.pre + '\n' + codeOf(d))
+      (canvas, ctx, canvas.width, canvas.height, raf, d.button);
+  } catch (e) {
+    d.err.textContent = '出错了：' + e.message;
+  }
+}
+
+function download(d) {
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>我的作品</title></head>
+<body style="margin:0;min-height:100vh;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;background:#000">
+  <canvas id="c" width="1280" height="720" style="max-width:100%;background:#05050f"></canvas>
+${d.rec ? '  <button id="btn" style="font-size:16px;padding:8px 16px">● 录制完整短片</button>\n' : ''}  <script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const button = ${d.rec ? "document.getElementById('btn')" : 'null'};
+${d.pre}
+${codeOf(d)}
+<\/script>
+</body>
+</html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  a.download = 'my-page.html';
+  a.click();
+}
+</script>
+</body>
+</html>
